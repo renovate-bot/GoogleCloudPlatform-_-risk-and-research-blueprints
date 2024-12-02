@@ -19,7 +19,7 @@ data "google_project" "environment" {
 
 # Module to manage project-level settings and API enablement
 module "project" {
-  source     = "../../../terraform/modules/project"
+  source     = "../../terraform/modules/project"
   project_id = data.google_project.environment.project_id
   region     = var.region
 }
@@ -30,12 +30,12 @@ module "quota" {
   source              = "../../terraform/modules/quota"
   project_id          = data.google_project.environment.project_id
   region              = var.region
-  quota_contact_email = var.quota_contact_email
+  quota_contact_email = var.additional_quota_enabled ? var.quota_contact_email : "null"
 }
 
 # Module to create VPC network and subnets
 module "networking" {
-  source                = "../../../terraform/modules/network"
+  source                = "../../terraform/modules/network"
   project_id            = data.google_project.environment.project_id
   region                = var.region
   depends_on            = [module.project]
@@ -46,7 +46,7 @@ module "networking" {
 # Conditionally create a GKE Standard cluster
 module "gke_standard" {
   count                = var.gke_standard_enabled ? 1 : 0
-  source               = "../../../terraform/modules/gke-standard"
+  source               = "../../terraform/modules/gke-standard"
   project_id           = data.google_project.environment.project_id
   region               = var.region
   zones                = var.zones
@@ -62,7 +62,7 @@ module "gke_standard" {
 # Conditionall create a GKE Autpilot cluster
 module "gke_autopilot" {
   count             = var.gke_autopilot_enabled ? 1 : 0
-  source            = "../modules/gke-autopilot"
+  source            = "../../terraform/modules/gke-autopilot"
   project_id        = data.google_project.environment.project_id
   region            = var.region
   network           = module.networking.network
@@ -70,12 +70,13 @@ module "gke_autopilot" {
   ip_range_services = module.networking.subnet-2.secondary_ip_range[0].range_name
   ip_range_pods     = module.networking.subnet-2.secondary_ip_range[1].range_name
   depends_on        = [module.project, module.networking]
+  artifact_registry = module.artifact_registry.artifact_registry
 }
 
 # Create a Parallestore Instance
 module "parallelstore" {
   count      = var.parallelstore_enabled ? 1 : 0
-  source     = "../modules/parallelstore"
+  source     = "../../terraform/modules/parallelstore"
   project_id = data.google_project.environment.project_id
   region     = var.region
   network    = module.networking.network
@@ -83,7 +84,7 @@ module "parallelstore" {
 
 # Artifact Registry for Images
 module "artifact_registry" {
-  source     = "../../../terraform/modules/artifact-registry"
+  source     = "../../terraform/modules/artifact-registry"
   region     = var.region
   project_id = data.google_project.environment.project_id
 }

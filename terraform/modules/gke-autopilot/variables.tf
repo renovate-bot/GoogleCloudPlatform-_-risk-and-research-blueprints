@@ -49,3 +49,11 @@ variable "ip_range_services" {
   type        = string
   description = "The _name_ of the secondary subnet range to use for services"
 }
+
+variable "artifact_registry" {
+  type = object({
+    project  = string
+    location = string
+    name     = string
+  })
+}

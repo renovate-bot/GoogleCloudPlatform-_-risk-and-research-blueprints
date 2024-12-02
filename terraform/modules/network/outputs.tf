@@ -17,23 +17,20 @@ output "network" {
   value       = google_compute_network.research-vpc.id
 }
 
-
-
 output "subnet-1" {
   description = "Standard Subnet"
-
-  value = {
-    name               = length(google_compute_subnetwork.cluster-1) > 0 ? google_compute_subnetwork.cluster-1[0].name : 0
-    id                 = length(google_compute_subnetwork.cluster-1) > 0 ? google_compute_subnetwork.cluster-1[0].id : 0
-    secondary_ip_range = length(google_compute_subnetwork.cluster-1) > 0 ? google_compute_subnetwork.cluster-1[0].secondary_ip_range : []
-  }
+  value = length(google_compute_subnetwork.cluster-1) > 0 ? {
+    name               = google_compute_subnetwork.cluster-1[0].name
+    id                 = google_compute_subnetwork.cluster-1[0].id
+    secondary_ip_range = google_compute_subnetwork.cluster-1[0].secondary_ip_range
+  } : null
 }
 
 output "subnet-2" {
-  description = "Autopilot Subnet"
-  value = {
-    name               = length(google_compute_subnetwork.cluster-2) > 0 ? google_compute_subnetwork.cluster-2[0].name : 0
-    id                 = length(google_compute_subnetwork.cluster-2) > 0 ? google_compute_subnetwork.cluster-2[0].id : 0
-    secondary_ip_range = length(google_compute_subnetwork.cluster-2) > 0 ? google_compute_subnetwork.cluster-2[0].secondary_ip_range : []
-  }
+  description = "Standard Subnet"
+  value = length(google_compute_subnetwork.cluster-2) > 0 ? {
+    name               = google_compute_subnetwork.cluster-2[0].name
+    id                 = google_compute_subnetwork.cluster-2[0].id
+    secondary_ip_range = google_compute_subnetwork.cluster-2[0].secondary_ip_range
+  } : null
 }

@@ -12,7 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-output "gcs_bucket" {
-  description = "GCS Bucket for Research Monte Carlo Example"
-  value       = google_storage_bucket.gkebatch.url
+output "network" {
+  description = "network"
+  value       = module.networking.network
+}
+
+output "subnet-1" {
+  description = "Standard Subnet"
+  value       = module.networking.subnet-1
+}
+
+output "subnet-2" {
+  description = "Autopilot Subnet"
+  value       = module.networking.subnet-2
+}
+
+output "artifact_registry_url" {
+  description = "Address of the remote repository."
+  value       = module.artifact_registry.artifact_registry_url
+}
+
+output "artifact_registry" {
+  description = "Address of the remote repository."
+  value       = module.artifact_registry.artifact_registry
 }

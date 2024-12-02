@@ -128,69 +128,10 @@ resource "google_project_iam_member" "monitoring_viewer" {
   member  = "serviceAccount:${google_service_account.cluster_service_account.email}"
 }
 
-# Artifact Registry
-resource "google_artifact_registry_repository" "research-images" {
-  project       = data.google_project.environment.project_id
-  location      = var.region
-  repository_id = "research-images"
-  description   = "Images"
-  format        = "DOCKER"
-  # Keep only 10 latest images in docker repo
-  cleanup_policies {
-    id     = "keep-minimum-versions"
-    action = "KEEP"
-    most_recent_versions {
-      keep_count = 10
-    }
-  }
-  docker_config {
-    immutable_tags = true
-  }
-}
-
-resource "google_artifact_registry_repository_iam_member" "gke-cluster-access" {
-  project    = google_artifact_registry_repository.research-images.project
-  location   = google_artifact_registry_repository.research-images.location
-  repository = google_artifact_registry_repository.research-images.name
-  role       = "roles/artifactregistry.reader"
-  # Get output from GKE SA
-  member = "serviceAccount:${google_service_account.cluster_service_account.email}"
-}
-
-# TODO - Look to move these somewhere else away from Infra
-resource "google_project_iam_member" "pubsub_subscriber" {
-  project = data.google_project.environment.project_id
-  role    = "roles/pubsub.subscriber"
-  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/${data.google_project.environment.project_id}/locations/${var.region}/clusters/${google_container_cluster.default.name}"
-  # member = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/namespace/${var.htcexample-namespace}"
-}
-
-resource "google_project_iam_member" "pubsub_publisher" {
-  project = data.google_project.environment.project_id
-  role    = "roles/pubsub.publisher"
-  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/${data.google_project.environment.project_id}/locations/${var.region}/clusters/${google_container_cluster.default.name}"
-  # member = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/namespace/${var.htcexample-namespace}"
-}
-
-resource "google_project_iam_member" "pubsub_viewer" {
-  project = data.google_project.environment.project_id
-  role    = "roles/pubsub.viewer"
-  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/${data.google_project.environment.project_id}/locations/${var.region}/clusters/${google_container_cluster.default.name}"
-  # member = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/namespace/${var.htcexample-namespace}"
-}
-
-
-resource "google_project_iam_member" "example_monitoring_viewer" {
-  project = data.google_project.environment.project_id
-  role    = "roles/monitoring.viewer"
-  member  = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/kubernetes.cluster/https://container.googleapis.com/v1/projects/${data.google_project.environment.project_id}/locations/${var.region}/clusters/${google_container_cluster.default.name}"
-  # member = "principalSet://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/namespace/${var.htcexample-namespace}"
-}
-
 resource "google_artifact_registry_repository_iam_member" "artifactregistry_reader" {
-  project    = google_artifact_registry_repository.research-images.project
-  location   = google_artifact_registry_repository.research-images.location
-  repository = google_artifact_registry_repository.research-images.name
+  project    = data.google_project.environment.project_id
+  location   = var.artifact_registry.location
+  repository = var.artifact_registry.name
   role       = "roles/artifactregistry.reader"
   member     = "serviceAccount:${google_service_account.cluster_service_account.email}"
 }

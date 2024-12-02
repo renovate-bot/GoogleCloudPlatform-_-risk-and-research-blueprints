@@ -76,4 +76,5 @@ variable "additional_quota_enabled" {
 variable "quota_contact_email" {
   description = "Your contact email for the quota request"
   type        = string
+  default     = "null"
 }
