@@ -1,97 +1,258 @@
-## Description
+# Running batch jobs on GKE
 
-Copy files to a target GCS bucket.
+Running a job on kubernetes using the Batch and Jobs API is reasonably simple if you use GKE Autopilot.
+Autopilot will scale up nodes to provide the requirements of the Pod created for your Job submission.
 
-Primarily used for FSI - MonteCarlo Tutorial **[fsi-montecarlo-on-batch-tutorial]**.
+## Introduction
 
-[fsi-montecarlo-on-batch-tutorial]:
-../docs/tutorials/fsi-montecarlo-on-batch/README.md
+In this demo we use the [Python kubernetes API](https://github.com/kubernetes-client/python/)
+to submit pods on a Kubernetes cluster.
 
-## Usage
-This copies the module files to the specified GCS bucket. It is expected that
-the bucket will be mounted on the target VM.
+To populate the basic settings for the Job, we use `settings.toml`, which is
+read using the [Dynaconf library](https://www.dynaconf.com/). One of the advantages of Dynaconf is
+the ability to read from a variety of files (toml, yaml, json, etc) and to override those settings with
+environment variables.
 
-Some of the files are templates, and `main.tf` translates the files with the
-passed variable values. This way the user does not have to change things like
-pointing to the correct bigquery table or adding in the project_id.
+## Tutorial architecture
+The overall structure of this tutorial is as follows:
 
-```yaml
-  - id: fsi_tutorial_files
-    source: community/modules/files/fsi-montecarlo-on-batch
-    use: [bq-dataset, bq-table, fsi_bucket, pubsub_topic]
+* The Monte Carlo simulation is managed with
+  [Kueue](https://cloud.google.com/kubernetes-engine/docs/tutorials/kueue-intro).
+* The output of the Monte Carlo simulation is published to a
+  [PubSub](https://cloud.google.com/pubsub/docs/overview) topic.
+* The PubSub data is entered into [BigQuery](https://cloud.google.com/bigquery)
+via a [PubSub BigQuery subscription](https://cloud.google.com/pubsub/docs/bigquery)
+* The data is visualized via a
+  [Vertex AI Workbench](https://cloud.google.com/vertex-ai-workbench)
+  [Jupyter Notebook](https://jupyter.org/)
+
+<img src="https://services.google.com/fh/files/blogs/gke_arch.png" width="800" />
+
+
+## Cost to run
+The following elements of this tutorial will result in charges to your billing
+account. Please validate with the
+[Google Cloud Pricing Calculator](https://cloud.google.com/products/calculator)
+
+* Pub/Sub
+* BigQuery
+* Vertex AI Notebooks
+* Cluster Toolkit
+* Google Kubernetes Engine (GKE)
+* Artifact Registry
+* Cloud Build
+
+## Getting started
+
+### Kubernetes Cluster, GKE
+
+> If you have an existing Kubernetes Cluster you can step.
+
+1. Clone this repository
+1. `cd` to `research-platform-for-fsi/examples/research/monte-carlo`
+1. Edit the `variables.tf` file to update `project_id` and if you choose, `region`.
+1. Run `terraform init`
+1. Run `terraform apply`
+
+This will create a GKE kubernetes cluster, `gke-risk-research` in your project.
+
+Once complete, authenticate to the cluster.
+```
+gcloud container clusters get-credentials gke-risk-research --region us-central1
 ```
 
-## License
+Now the cluster build is complete and you are authenticated, install Kueue and Kueue Configurations:
 
-<!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
-Copyright 2024 Google LLC
+When complete, run the local Kueue configuration. This will create a `cluster-queue` and two `local-queues`, `lq-team-a` and `lq-team-b`.
+```
+kubectl apply --server-side -k kubernetes
+```
+To see the details of the cluster queue, use `kubectl`.
+```
+kubectl get clusterqueue cluster-queue
+```
+To see the local queues, again use `kubectl get localqueue
+```
+kubectl get localqueues --all-namespaces
+```
+This completes the Kubernetes configuration.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+### Install GCP Cluster Toolkit
 
-     http://www.apache.org/licenses/LICENSE-2.0
+We will make use of the cluster Toolkit in the next step. The instructions to install it are here:
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+[Set up Cluster Toolkit](https://cloud.google.com/cluster-toolkit/docs/setup/configure-environment)
 
-## Requirements
+You should install this in your $HOME directory. Then you can test it:
+```
+~/cluster-toolkit/gcluster --version
+```
 
-| Name | Version |
-|------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
-| <a name="requirement_google"></a> [google](#requirement\_google) | >= 3.83 |
-| <a name="requirement_http"></a> [http](#requirement\_http) | ~> 3.0 |
-| <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.0 |
-| <a name="requirement_template"></a> [template](#requirement\_template) | ~> 2.0 |
+### Build docker container and send to Artifact Registry
+To efficiently run the code required for this tutorial, you must build a docker container
+Python installed with the relevant libraries and local Python scripts. You then send it to
+Google Cloud Aritifact Registry, in a repository called `research-images`. This work is
+managed by Google Cloud Build.
 
-## Providers
+Run Google Cloud Build as follows:
+1. `cd` to `research-platform-for-fsi/examples/research/monte-carlo/src/docker`
 
-| Name | Version |
-|------|---------|
-| <a name="provider_google"></a> [google](#provider\_google) | >= 3.83 |
-| <a name="provider_http"></a> [http](#provider\_http) | ~> 3.0 |
-| <a name="provider_random"></a> [random](#provider\_random) | ~> 3.0 |
-| <a name="provider_template"></a> [template](#provider\_template) | ~> 2.0 |
+```
+gcloud builds submit --region=us-central1 --config cloudbuild.yaml
+```
+Ensure that `us-central1` is the region your cluster ended up in.
 
-## Modules
+### Install the tutorial code
 
-No modules.
+This tutorial is part of the `research-platform-for-fsi` repository.
 
-## Resources
+1. `cd` to `research-platform-for-fsi/examples/research/monte-carlo/src`
+1. Run `gcluster`
+```
+~/cluster-toolkit/gcluster deploy fsi-montecarlo-on-gke.yaml \
+   --vars "project_id=${GOOGLE_CLOUD_PROJECT}"
+```
 
-| Name | Type |
-|------|------|
-| [google_storage_bucket_object.get_iteration_sh](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.get_mc_reqs](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.get_requirements](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.ipynb_obj_fsi](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.mc_obj_yaml](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.mc_run](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [google_storage_bucket_object.run_batch_py](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
-| [random_id.resource_name_suffix](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/id) | resource |
-| [http_http.batch_py](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
-| [http_http.batch_requirements](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
-| [template_file.ipynb_fsi](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) | data source |
-| [template_file.mc_run_py](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) | data source |
-| [template_file.mc_run_yaml](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) | data source |
+Ensure that the $GOOGLE_CLOUD_PROJECT variable is set to your project ID.
 
-## Inputs
+### Open the Vertex AI Workbench Notebook
+When the deployment is complete, you can connect to the Vertex AI Workbench Notebook. Navigate to:
 
-| Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:--------:|
-| <a name="input_dataset_id"></a> [dataset\_id](#input\_dataset\_id) | Bigquery dataset id | `string` | n/a | yes |
-| <a name="input_gcs_bucket_path"></a> [gcs\_bucket\_path](#input\_gcs\_bucket\_path) | Bucket name | `string` | `null` | no |
-| <a name="input_project_id"></a> [project\_id](#input\_project\_id) | ID of project in which GCS bucket will be created. | `string` | n/a | yes |
-| <a name="input_region"></a> [region](#input\_region) | Region to run project | `string` | n/a | yes |
-| <a name="input_table_id"></a> [table\_id](#input\_table\_id) | Bigquery table id | `string` | n/a | yes |
-| <a name="input_topic_id"></a> [topic\_id](#input\_topic\_id) | Pubsub Topic Name | `string` | n/a | yes |
-| <a name="input_topic_schema"></a> [topic\_schema](#input\_topic\_schema) | Pubsub Topic schema | `string` | n/a | yes |
+https://console.cloud.google.com/vertex-ai/workbench/instances
 
-## Outputs
+If the Notebook instance is complete, **"OPEN JUPYTERLAB"** will be listed. If not, wait until it completes.
 
-No outputs.
-<!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
+> Open JupyterLab on the Notebook instance listed.
+
+<img src="https://services.google.com/fh/files/blogs/gke_workbench.png" width="500" />
+
+```bash
+Click on `OPEN JUPYTERLAB` link
+```
+
+> In the JupyterLab UI, you will see a list of directories:
+
+```bash
+Select `data`
+```
+
+> Under `data` all the files required to run the demo have been pepared.
+
+<img src="https://services.google.com/fh/files/blogs/gke_files.png" width="300" />
+
+> Open a terminal window by clicking on the terminal icon.
+
+<img src="https://services.google.com/fh/files/blogs/fsi_terminal.png" width="200" />
+
+> Run the `run_me_first.sh` shell script.
+
+```
+source ./run_me_first.sh
+```
+
+> Run the `gke_batch.py` Python script to ensure it is working.
+
+```bash
+python3 gke_batch.py --help
+```
+You will see a listing of the help messages.
+
+In this tutorial, all the settings are in a file called:
+```
+settings.toml
+```
+The default values set in this file should work for the tutorial, but it is the first place
+to look if you have to debug.
+
+> To start the VaR simulation, run `gke_batch.py` with `--create_job`
+
+```bash
+python3 gke_batch.py --create_job
+```
+
+You should see output without any errors, listing information about the job.
+
+> To see if the job is running, use the `--list_jobs` options.
+
+```bash
+python3 gke_batch.py --list_jobs
+```
+<img src="https://services.google.com/fh/files/blogs/gke_listjobs.png" width="300" />
+
+If you want to see the jobs listed in the Cloud Console, you can click:
+
+https://console.cloud.google.com/kubernetes/workload/overview
+
+## View the data in BigQuery
+The batch job runs Monte Carlo simulation for the VaR calculation. The output
+from each run is stored in BigQuery. To view this data in it's raw form, you can
+view BigQuery in the Cloud Console:
+
+https://console.cloud.google.com/bigquery
+
+> Navigate to table with a name that starts with `montecarlo`.
+
+<img src="https://services.google.com/fh/files/blogs/gke_bq.png" width="300" />
+
+> There you can see the schema.
+
+<img src="https://services.google.com/fh/files/blogs/gke_schema.png" width="600" />
+
+> To see the data, click on `PREVIEW`
+
+<img src="https://services.google.com/fh/files/blogs/fsi_preview.png" width="600" />
+
+For an advanced user, you can run queries directly in the BigQuery UI.
+
+## Visualization in the Notebook
+
+Finally, you can select the `FSI_MonteCarlo.ipynb` from the left navigation in
+the JupyterLab window.
+
+<img src="https://services.google.com/fh/files/blogs/fsi_ipynb.png" width="300" />
+
+To run the cells in the notebook, select the cell, then click the play button,
+or `Alt-Enter`.
+
+> Run the cells in the order they appear.
+
+<img src="https://services.google.com/fh/files/blogs/fsi_notebook.png" width="600" />
+
+> After running the second cell, you should see output.
+
+<img src="https://services.google.com/fh/files/blogs/fsi_output.png" width="500" />
+
+> Finally, when you run Cell #4, you will see graphs and table summaries.
+
+<img src="https://services.google.com/fh/files/blogs/fsi_graphs.png" width="600" />
+
+## Summary
+
+In this tutorial, you accomplished the following:
+
+* You created Cloud infrastructure
+  * Vertex AI notebooks
+  * BigQuery Tables
+  * Pubsub BigQuery Subscription
+  * Batch jobs on GKE
+* You ran a MonteCarlo simulation for VaR on several stock tickers.
+* You reviewed the data in BigQuery
+* You visualized the data in Vertex AI notebooks.
+
+## Shutting down
+
+The best way to clean up your workspace is to delete the project. This will
+ensure you are not billed for any of the Cloud usage.
+
+### Alternatively
+
+The other choice is to run a `gcluster destroy` command.
+
+```bash
+./gcluster destroy fsimontecarlo
+```
+Change directory to /examples/research/monte-carlo
+
+```bash
+terraform destroy
+```
