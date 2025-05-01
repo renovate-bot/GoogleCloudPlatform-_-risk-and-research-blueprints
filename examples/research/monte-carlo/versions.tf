@@ -24,6 +24,6 @@ terraform {
     }
   }
   provider_meta "google" {
-    module_name = "cloud-solutions/fsi-rdp-infrastructure-v1.0.0"
+    module_name = "cloud-solutions/fsi-rdp-monte-carlo-v1.0.0"
   }
 }
