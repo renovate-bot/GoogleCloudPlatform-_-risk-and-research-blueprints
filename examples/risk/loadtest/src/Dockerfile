@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.23 AS bld
+FROM golang:1.24 AS bld
 
 # Fetch building tools
 RUN apt-get update && apt-get install -y \
-    ca-certificates openssl \
-    golang-google-protobuf-dev \
-    protoc-gen-go \
-    protoc-gen-go-grpc \
+  ca-certificates openssl \
+  golang-google-protobuf-dev \
+  protoc-gen-go \
+  protoc-gen-go-grpc \
   && rm -rf /var/lib/apt/lists/*
 
 # Fetch Dependencies
