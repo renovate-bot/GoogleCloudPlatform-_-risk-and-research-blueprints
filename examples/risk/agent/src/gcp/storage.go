@@ -44,11 +44,15 @@ func (r gzipReadWrapper) Read(p []byte) (int, error) {
 }
 
 func (r gzipReadWrapper) Close() error {
-	if err := r.greader.Close(); err != nil {
-		r.reader.Close()
-		return err
+	errGzip := r.greader.Close()
+	errReader := r.reader.Close()
+	if errGzip != nil {
+		if errReader != nil {
+			slog.Warn("gzipReadWrapper: underlying reader also failed to close", "underlyingError", errReader.Error(), "primaryError", errGzip.Error())
+		}
+		return errGzip
 	}
-	return r.reader.Close()
+	return errReader
 }
 
 var gsPattern = regexp.MustCompile(`^gs://([^/]+)/(.*)$`)
@@ -104,11 +108,15 @@ func (r gzipWriteWrapper) Write(p []byte) (int, error) {
 }
 
 func (r gzipWriteWrapper) Close() error {
-	if err := r.gwriter.Close(); err != nil {
-		r.writer.Close()
-		return err
+	errGzip := r.gwriter.Close()
+	errWriter := r.writer.Close()
+	if errGzip != nil {
+		if errWriter != nil {
+			slog.Warn("gzipWriteWrapper: underlying writer also failed to close", "underlyingError", errWriter.Error(), "primaryError", errGzip.Error())
+		}
+		return errGzip
 	}
-	return r.writer.Close()
+	return errWriter
 }
 
 func (cfg *GoogleConfig) CreateWriter(ctxt context.Context, file string) (io.WriteCloser, error) {

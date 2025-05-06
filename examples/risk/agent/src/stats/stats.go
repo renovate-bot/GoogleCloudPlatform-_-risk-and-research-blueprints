@@ -68,7 +68,7 @@ func (cfg *StatsConfig) showStats(
 			if idleTime.IsZero() {
 				timeoutTimer.Stop()
 			} else if timeout >= time.Duration(0) {
-				timerLimit := timeout - time.Now().Sub(idleTime)
+				timerLimit := timeout - time.Since(idleTime)
 				if timerLimit <= time.Duration(0) {
 					cfg.cancel()
 				} else {

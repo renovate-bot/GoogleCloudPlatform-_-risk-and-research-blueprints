@@ -17,8 +17,10 @@ package protoio
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"iter"
+	"log/slog"
 
 	"github.com/GoogleCloudPlatform/finance-research-risk-examples/examples/risk/agent/gcp"
 	"google.golang.org/protobuf/proto"
@@ -34,7 +36,11 @@ func ReadLines(ctxt context.Context, google *gcp.GoogleConfig, input string) ite
 			yield(nil, err)
 			return
 		}
-		defer r.Close()
+		defer func() {
+			if closeErr := r.Close(); closeErr != nil {
+				slog.Error("Failed to close reader in ReadLines iterator", "input", input, "error", closeErr.Error())
+			}
+		}()
 
 		reader := bufio.NewReader(r)
 
@@ -54,28 +60,51 @@ func ReadLines(ctxt context.Context, google *gcp.GoogleConfig, input string) ite
 }
 
 // WriteLines (text)
-func WriteLines(ctxt context.Context, google *gcp.GoogleConfig, src iter.Seq2[[]byte, error], output string) error {
+func WriteLines(ctxt context.Context, google *gcp.GoogleConfig, src iter.Seq2[[]byte, error], output string) (retErr error) {
 	w, err := google.CreateWriter(ctxt, output)
 	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	for msg, err := range src {
-		if err != nil {
-			return err
-		}
-		_, err = w.Write(msg)
-		if err != nil {
-			return err
-		}
-		_, err = w.Write([]byte{'\n'})
-		if err != nil {
-			return err
-		}
+		retErr = fmt.Errorf("failed to create writer for '%s': %w", output, err)
+		return
 	}
 
-	return nil
+	defer func() {
+		if closeErr := w.Close(); closeErr != nil {
+			if retErr == nil {
+				retErr = fmt.Errorf("failed to close writer for '%s': %w", output, closeErr)
+			} else {
+				slog.Error("Additionally failed to close writer after a primary write error",
+					"output", output,
+					"primaryError", retErr.Error(),
+					"closeError", closeErr.Error())
+			}
+		}
+	}()
+
+	for msg, iterErr := range src {
+		if ctxt.Err() != nil {
+			retErr = ctxt.Err()
+			return
+		}
+		if iterErr != nil {
+			retErr = fmt.Errorf("error from source iterator while writing to '%s': %w", output, iterErr)
+			return
+		}
+		_, writeErr := w.Write(msg)
+		if writeErr != nil {
+			retErr = fmt.Errorf("failed to write to '%s': %w", output, writeErr)
+			return
+		}
+		_, writeErr = w.Write([]byte{'\n'})
+		if writeErr != nil {
+			retErr = fmt.Errorf("failed to write to '%s': %w", output, writeErr)
+			return
+		}
+	}
+
+	if ctxt.Err() != nil {
+		retErr = ctxt.Err()
+	}
+	return
 }
 
 // Read as Proto messages
