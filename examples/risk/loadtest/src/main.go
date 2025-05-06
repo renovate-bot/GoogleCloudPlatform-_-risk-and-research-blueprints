@@ -173,8 +173,14 @@ func main() {
 				if err != nil {
 					return fmt.Errorf("running quant: %w", err)
 				}
-				os.Stdout.Write(omsg)
-				os.Stdout.Write([]byte{'\n'})
+
+				if _, err := os.Stdout.Write(omsg); err != nil {
+					fmt.Printf("warning: failed to write to stdout: %v", err)
+
+				}
+				if _, err := os.Stdout.Write([]byte{'\n'}); err != nil {
+					fmt.Printf("warning: failed to write newline to stdout: %v", err)
+				}
 			}
 
 			return nil

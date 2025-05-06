@@ -146,8 +146,9 @@ func handleMessage(
 	}
 
 	// Run the task raw
+	requestCtx := context.WithValue(ctxt, srcIDKey, srcId)
 	rbuf, err := invoker(
-		context.WithValue(ctxt, "srcId", srcId),
+		requestCtx,
 		data)
 
 	// If error, do a Nack for faster retry

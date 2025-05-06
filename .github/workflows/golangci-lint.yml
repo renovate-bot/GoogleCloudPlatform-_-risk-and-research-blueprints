@@ -1,0 +1,62 @@
+name: golangci-lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+env:
+  GO_VERSION: stable
+  GOLANGCI_LINT_VERSION: v2.1
+
+jobs:
+  detect-modules:
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+
+  golangci-lint:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install protoc
+        uses: arduino/setup-protoc@v3
+        with:
+          version: '29.2'
+      - name: Install Go protobuf/gRPC plugins
+        working-directory: ${{ matrix.modules }} # Run in module dir to ensure go.mod is respected
+        run: |
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33.0
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1 # Use v1.3.0 for grpc if not using grpc-go 1.59+
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH # Ensure plugins are in PATH
+
+      - name: Generate Go code from Protobuf
+        working-directory: ${{ matrix.modules }}
+        run: go generate ./...
+
+      - name: Install protoc-gen-go
+        run:  go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.33.0
+      - name: Install protoc-gen-go-grpc
+        run:  go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: ${{ matrix.modules }}

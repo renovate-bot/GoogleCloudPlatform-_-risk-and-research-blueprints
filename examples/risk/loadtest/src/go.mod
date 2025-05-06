@@ -1,6 +1,6 @@
 module github.com/GoogleCloudPlatform/finance-research-risk-examples/examples/risk/loadtest
 
-go 1.23
+go 1.24
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0
