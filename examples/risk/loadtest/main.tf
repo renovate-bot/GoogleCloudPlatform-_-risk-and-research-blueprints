@@ -385,7 +385,7 @@ resource "google_project_iam_member" "gke_hpa" {
   role    = "roles/monitoring.viewer"
   member  = "principal://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/subject/ns/custom-metrics/sa/custom-metrics-stackdriver-adapter"
 
-  depends_on = [ module.infrastructure ]
+  depends_on = [module.infrastructure]
 }
 
 resource "google_project_iam_member" "metrics_writer" {
@@ -393,7 +393,7 @@ resource "google_project_iam_member" "metrics_writer" {
   role    = "roles/monitoring.metricWriter"
   member  = "principal://iam.googleapis.com/projects/${data.google_project.environment.number}/locations/global/workloadIdentityPools/${data.google_project.environment.project_id}.svc.id.goog/subject/ns/default/sa/default"
 
-  depends_on = [ module.infrastructure ]
+  depends_on = [module.infrastructure]
 }
 
 #-----------------------------------------------------

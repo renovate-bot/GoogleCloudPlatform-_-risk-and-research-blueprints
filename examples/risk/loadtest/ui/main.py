@@ -132,9 +132,7 @@ def timestamp():
 # Run the shell asynchronously
 async def run_shell(task):
     logging.info(f"Running shell task {task['name']}")
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".sh", delete=False
-    ) as t:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".sh", delete=False) as t:
         os.chmod(t.name, stat.S_IXUSR | stat.S_IRUSR | stat.S_IWUSR)
         t.write(task["script"])
         t.close()
