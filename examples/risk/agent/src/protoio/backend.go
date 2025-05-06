@@ -137,7 +137,7 @@ func (cfg *BackendConfiguration) connect(ctxt context.Context) error {
 
 	// Monitor state for logging
 	go func() {
-		var lstate connectivity.State = client.GetState()
+		var lstate = client.GetState()
 
 		for {
 

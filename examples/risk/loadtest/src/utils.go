@@ -150,12 +150,22 @@ func WriteLines(output string, it iter.Seq[string]) error {
 		if err != nil {
 			return fmt.Errorf("error creating: %v", err)
 		}
-		defer f.Close()
+
+		defer func() {
+			if err := f.Close(); err != nil {
+				fmt.Printf("Error closing file: %v", err)
+			}
+		}()
+
 		w = f
 
 		if strings.HasSuffix(output, ".gz") {
 			gf := gzip.NewWriter(f)
-			defer gf.Close()
+			defer func() {
+				if err := gf.Close(); err != nil {
+					fmt.Printf("Error closing file: %v", err)
+				}
+			}()
 			w = gf
 		}
 	}
@@ -190,7 +200,12 @@ func ReadLines(input string) iter.Seq2[string, error] {
 				return
 			}
 			r = file
-			defer file.Close()
+
+			defer func() {
+				if err := file.Close(); err != nil {
+					fmt.Printf("Error closing file: %v", err)
+				}
+			}()
 
 			if strings.HasSuffix(input, ".gz") {
 				file, err := gzip.NewReader(file)
@@ -198,7 +213,13 @@ func ReadLines(input string) iter.Seq2[string, error] {
 					yield("", err)
 					return
 				}
-				defer file.Close()
+
+				defer func() {
+					if err := file.Close(); err != nil {
+						fmt.Printf("Error closing file: %v", err)
+					}
+				}()
+
 				r = file
 			}
 		}

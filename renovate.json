@@ -3,28 +3,42 @@
   "extends": [
     "config:recommended"
   ],
-  "schedule": ["* 0-4 * * 1"],
+  "schedule": [
+    "* 1 * * 1,3,5"
+  ],
   "timezone": "UTC",
   "automerge": true,
   "automergeType": "branch",
   "automergeStrategy": "merge-commit",
   "packageRules": [
     {
-      "matchUpdateTypes": ["major"],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "automerge": false
     },
     {
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "matchCurrentVersion": "!/^0/",
       "automerge": true
     },
     {
-      "matchDepTypes": ["devDependencies"],
+      "matchDepTypes": [
+        "devDependencies"
+      ],
       "automerge": true
     },
     {
-      "matchManagers": ["terraform"],
-      "matchDepTypes": ["required_provider", "required_version"],
+      "matchManagers": [
+        "terraform"
+      ],
+      "matchDepTypes": [
+        "required_provider",
+        "required_version"
+      ],
       "enabled": true,
       "automerge": true
     }
@@ -33,13 +47,19 @@
   "dependencyDashboardTitle": "Dependency Dashboard",
   "prHourlyLimit": 2,
   "prConcurrentLimit": 5,
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "vulnerabilityAlerts": {
-    "labels": ["security"]
+    "labels": [
+      "security"
+    ]
   },
   "lockFileMaintenance": {
     "enabled": true,
-    "schedule": ["* 0-4 * * 1"]
+    "schedule": [
+      "* 1 * * 1,3,5"
+    ]
   },
   "groupName": "all dependencies",
   "terraform": {

@@ -271,26 +271,21 @@ func simulateWork(
 // Error should generally never occur.
 func busyWork(micros int64) error {
 	h := crc32.NewIEEE()
-
 	endTime := time.Now().Add(time.Microsecond * time.Duration(micros))
 	buf := make([]byte, 32)
-	for {
 
-		// Stop if after the end
-		if time.Now().After(endTime) {
-			break
-		}
-
+	// Loop as long as the current time is NOT after endTime
+	for !time.Now().After(endTime) {
 		// Read in random data
 		_, err := crand.Read(buf)
 		if err != nil {
-			return fmt.Errorf("failed reading random bytes")
+			return fmt.Errorf("failed reading random bytes: %w", err)
 		}
 
 		// Write random data to hash function
 		_, err = h.Write(buf)
 		if err != nil {
-			return fmt.Errorf("failed writing to hash")
+			return fmt.Errorf("failed writing to hash: %w", err)
 		}
 	}
 

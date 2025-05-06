@@ -28,6 +28,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type contextKey string
+
+const srcIDKey contextKey = "srcId"
+
 func getRDFCommand(cfg *protoio.BackendConfiguration, stats *stats.StatsConfig) *cobra.Command {
 	grpcCmd := &cobra.Command{
 		Use:   "rdf",
@@ -86,12 +90,12 @@ func handleBigQuery(ctxt context.Context, invoker func(context.Context, []byte) 
 		// Call the routine serially
 		result := &BigQueryRDFResponse{}
 		result.Replies = make([]*json.RawMessage, len(m.Calls))
-		for i, r := range m.Calls {
-			slog.Debug("Running on backend as JSON", "json", string(r[0]))
+		for i, callData := range m.Calls {
+			slog.Debug("Running on backend as JSON", "json", string(callData[0]))
+			requestCtx := context.WithValue(ctxt, srcIDKey, m.RequestId)
 			reply, err := invoker(
-				context.WithValue(ctxt,
-					"srcId", m.RequestId),
-				r[0])
+				requestCtx,
+				callData[0])
 
 			if err != nil {
 				slog.Warn("Error running on backend", "error", err)

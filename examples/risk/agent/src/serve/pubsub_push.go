@@ -29,11 +29,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type PubSubConfig struct {
-	jsonPubSub bool
-	invoker    func(context.Context, []byte) ([]byte, error)
-}
-
 func NewPubSubPushAgent(cfg *protoio.BackendConfiguration, stats *stats.StatsConfig, google *gcp.GoogleConfig) *cobra.Command {
 
 	// PubSub push

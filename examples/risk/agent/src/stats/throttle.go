@@ -45,59 +45,79 @@ func Waitable(wg *sync.WaitGroup) <-chan struct{} {
 //
 // The context is used to short-circuit any delays, but otherwise
 // not used to stop the iteration.
-func Throttle[V any](ctxt context.Context, seq iter.Seq2[V, error], rate float64, ramp_steps int, ramp time.Duration) iter.Seq2[V, error] {
-
-	// Delay between operations (in nanoseconds)
-	nanodelay := time.Duration(0)
-	maxDelay := time.Duration(0)
+func Throttle[V any](ctxt context.Context, seq iter.Seq2[V, error], rate float64, ramp_steps int, ramp_duration time.Duration) iter.Seq2[V, error] {
+	targetNanodelay := time.Duration(0)
 	if rate > 0 {
-		nanodelay = time.Duration(int64(1e9 / rate))
-		slog.Debug("Minimum delay per throttle", "nanodelay", nanodelay)
-	}
-	if ramp > 0 {
-		maxDelay = time.Duration(int64(ramp) / int64(ramp_steps))
+		targetNanodelay = time.Duration(int64(1e9 / rate))
+	} else {
+		return seq
 	}
 
-	// Start time of the loop -- used for rate throttling
-	s := time.Now()
-	startTime := s
+	initialTotalRampDelay := targetNanodelay
+	useRamp := ramp_duration > 0 && ramp_steps > 0
+	if useRamp {
+		potentialInitialDelay := time.Duration(0)
+		if ramp_steps > 0 { // Prevent division by zero if ramp_steps is 0
+			potentialInitialDelay = ramp_duration / time.Duration(ramp_steps)
+		}
+
+		if potentialInitialDelay > targetNanodelay {
+			initialTotalRampDelay = potentialInitialDelay
+		}
+		// Log if ramp effect might be minimal
+		if initialTotalRampDelay <= targetNanodelay {
+			slog.Debug("Initial ramp delay is not significantly larger than target delay; ramp effect might be minimal or start at target rate.", "initial", initialTotalRampDelay, "target", targetNanodelay)
+		}
+	}
+
+	s_next_op_time := time.Now()
+	rampStartTime := s_next_op_time
 
 	return func(yield func(val V, err error) bool) {
 		for v, err := range seq {
-
-			// Pass on error
 			if err != nil {
 				var empty V
-				yield(empty, err)
+				if !yield(empty, err) {
+					return
+				}
+				continue
 			}
 
-			// Capture when the activity was dispatched
-			dispatchTime := time.Now()
+			currentOpDispatchTime := time.Now()
+			currentDelay := targetNanodelay
 
-			// Calculate next time
-			if rate > 0 {
+			if useRamp {
+				elapsedRampTime := currentOpDispatchTime.Sub(rampStartTime)
+				if elapsedRampTime < ramp_duration {
+					progressRatio := float64(elapsedRampTime) / float64(ramp_duration)
+					deltaDelay := initialTotalRampDelay - targetNanodelay
+					currentDelay = initialTotalRampDelay - time.Duration(float64(deltaDelay)*progressRatio)
 
-				thisDelay := nanodelay
-				if ramp > 0 {
-					ramp_step := (int64(s.Sub(startTime)) * int64(ramp_steps)) / int64(ramp)
-					if ramp_step < int64(ramp_steps) {
-						thisDelay += time.Duration(((int64(maxDelay) - int64(nanodelay)) * (int64(ramp_steps) - int64(ramp_steps))) / int64(ramp_steps))
+					if currentDelay < targetNanodelay {
+						currentDelay = targetNanodelay
 					}
-				}
-
-				s = s.Add(thisDelay)
-				if s.After(dispatchTime) {
-					sleepTime := s.Sub(dispatchTime)
-					select {
-					case <-ctxt.Done():
-					case <-time.After(sleepTime):
+					if initialTotalRampDelay > targetNanodelay && currentDelay > initialTotalRampDelay {
+						currentDelay = initialTotalRampDelay
 					}
 				} else {
-					s = dispatchTime
+					currentDelay = targetNanodelay
+					useRamp = false
 				}
 			}
 
-			// Yield it
+			if s_next_op_time.After(currentOpDispatchTime) {
+				sleepDuration := s_next_op_time.Sub(currentOpDispatchTime)
+				select {
+				case <-ctxt.Done():
+					return
+				case <-time.After(sleepDuration):
+				}
+			} else {
+				s_next_op_time = currentOpDispatchTime
+			}
+
+			s_next_op_time = s_next_op_time.Add(currentDelay)
+
 			if !yield(v, nil) {
 				return
 			}

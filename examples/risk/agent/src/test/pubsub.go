@@ -114,8 +114,7 @@ func getMessageReceiver(stats *stats.StatsConfig, jobNum int64) func(ctxt contex
 		slog.Debug("Receiving response", "response", msg)
 
 		// Always ack for received messages
-		var r *pubsub.AckResult = nil
-		r = msg.AckWithResult()
+		r := msg.AckWithResult()
 
 		// If exactly once enabled and there is an ack reslut,
 		// block until the result is returned and a pubsub.AcknowledgeStatus
