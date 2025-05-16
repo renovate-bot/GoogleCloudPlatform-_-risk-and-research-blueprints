@@ -210,7 +210,7 @@ variable "storage_type" {
   default     = null
 
   validation {
-    condition     = var.storage_type == null || contains(["PARALLELSTORE", "LUSTRE"], var.storage_type)
+    condition     = var.storage_type == null ? true : contains(["PARALLELSTORE", "LUSTRE"], var.storage_type)
     error_message = "The storage_type must be null, PARALLELSTORE, or LUSTRE."
   }
 }
@@ -221,7 +221,7 @@ variable "storage_capacity_gib" {
   default     = null
 
   validation {
-    condition     = var.storage_capacity_gib == null || var.storage_capacity_gib > 0
+    condition     = var.storage_capacity_gib == null ? true : var.storage_capacity_gib > 0
     error_message = "Storage capacity must be a positive number."
   }
 }
