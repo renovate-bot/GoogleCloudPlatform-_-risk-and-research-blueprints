@@ -164,9 +164,15 @@ resource "google_service_account" "cluster_service_account" {
   project      = data.google_project.environment.project_id
 }
 
-resource "google_project_iam_member" "monitoring_viewer" {
+resource "google_project_iam_member" "service_agent" {
   project = data.google_project.environment.project_id
   role    = "roles/container.serviceAgent"
+  member  = "serviceAccount:${google_service_account.cluster_service_account.email}"
+}
+
+resource "google_project_iam_member" "metrics_writer" {
+  project = data.google_project.environment.project_id
+  role    = "roles/autoscaling.metricsWriter"
   member  = "serviceAccount:${google_service_account.cluster_service_account.email}"
 }
 

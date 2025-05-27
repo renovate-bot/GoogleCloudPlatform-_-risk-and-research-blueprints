@@ -23,19 +23,12 @@ resource "google_project_service" "artifactregistry_googleapis_com" {
   service                    = "artifactregistry.googleapis.com"
 }
 
-# resource "google_project_service" "anthos_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "anthos.googleapis.com"
-# }
-
-# resource "google_project_service" "anthosconfigmanagement_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "anthosconfigmanagement.googleapis.com"
-# }
+resource "google_project_service" "autoscaling_googleapis_com" {
+  disable_dependent_services = false
+  disable_on_destroy         = false
+  project                    = data.google_project.environment.project_id
+  service                    = "autoscaling.googleapis.com"
+}
 
 resource "google_project_service" "cloudresourcemanager_googleapis_com" {
   disable_dependent_services = false
@@ -51,13 +44,6 @@ resource "google_project_service" "compute_googleapis_com" {
   service                    = "compute.googleapis.com"
 }
 
-# resource "google_project_service" "connectgateway_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "connectgateway.googleapis.com"
-# }
-
 resource "google_project_service" "container_googleapis_com" {
   disable_dependent_services = false
   disable_on_destroy         = false
@@ -71,27 +57,6 @@ resource "google_project_service" "containerfilesystem_googleapis_com" {
   project                    = data.google_project.environment.project_id
   service                    = "containerfilesystem.googleapis.com"
 }
-
-# resource "google_project_service" "containersecurity_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "containersecurity.googleapis.com"
-# }
-
-# resource "google_project_service" "gkeconnect_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "gkeconnect.googleapis.com"
-# }
-
-# resource "google_project_service" "gkehub_googleapis_com" {
-#   disable_dependent_services = false
-#   disable_on_destroy         = false
-#   project                    = data.google_project.environment.project_id
-#   service                    = "gkehub.googleapis.com"
-# }
 
 resource "google_project_service" "cloudquotas_googleapis_com" {
   disable_dependent_services = false
