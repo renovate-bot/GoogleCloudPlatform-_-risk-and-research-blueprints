@@ -122,7 +122,8 @@ resource "google_container_cluster" "risk-research" {
       "KUBELET",
       "APISERVER",
       "SCHEDULER",
-      "CONTROLLER_MANAGER"
+      "CONTROLLER_MANAGER",
+      "JOBSET"
     ]
     managed_prometheus {
       enabled = true
@@ -134,7 +135,8 @@ resource "google_container_cluster" "risk-research" {
       "APISERVER",
       "CONTROLLER_MANAGER",
       "SCHEDULER",
-      "WORKLOADS"
+      "WORKLOADS",
+      "KCP_HPA"
     ]
   }
 
