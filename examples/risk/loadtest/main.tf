@@ -91,6 +91,14 @@ locals {
   })
 }
 
+resource "random_string" "bucket_suffix" {
+  length  = 5
+  special = false
+  upper   = false
+  lower   = true
+  numeric = true
+}
+
 data "google_project" "environment" {
   project_id = var.project_id
 }
@@ -246,7 +254,7 @@ resource "google_logging_project_bucket_config" "analytics-enabled-bucket" {
   project          = var.project_id
   location         = module.default_region.default_region
   enable_analytics = true
-  bucket_id        = "applogs"
+  bucket_id        = "applogs-${random_string.bucket_suffix.result}"
   lifecycle {
     ignore_changes = [project]
   }
