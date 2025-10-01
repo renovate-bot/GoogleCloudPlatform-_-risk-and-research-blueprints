@@ -28,7 +28,7 @@ Run [Monte Carlo simulations](examples/research/monte-carlo/README.md) for VaR o
     - You must have roles/owner or equivalent IAM permissions on the project
 - Development environment with:
     - [Google Cloud SDK](https://cloud.google.com/sdk) (gcloud CLI)
-    - [Terraform](https://www.terraform.io/) (version 1.0+)
+    - [Terraform](https://www.terraform.io/) (version 1.9.0+)
     - [kubectl](https://kubernetes.io/docs/tasks/tools/)
     - [git](https://git-scm.com/)
 - You can also use [Cloud Shell](https://shell.cloud.google.com) which comes preinstalled with all required tools.
