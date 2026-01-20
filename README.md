@@ -28,7 +28,7 @@ Run [Monte Carlo simulations](examples/research/monte-carlo/README.md) for VaR o
     - You must have roles/owner or equivalent IAM permissions on the project
 - Development environment with:
     - [Google Cloud SDK](https://cloud.google.com/sdk) (gcloud CLI)
-    - [Terraform](https://www.terraform.io/) (version 1.0+)
+    - [Terraform](https://www.terraform.io/) (version 1.9.0+)
     - [kubectl](https://kubernetes.io/docs/tasks/tools/)
     - [git](https://git-scm.com/)
 - You can also use [Cloud Shell](https://shell.cloud.google.com) which comes preinstalled with all required tools.
@@ -151,7 +151,7 @@ This solution is under active development. Interfaces and functionality may chan
 ## License
 
 This repository is licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) (
-see [LICENSE](LICENSE.txt)). The solution includes declarative markdown files that are interpretable by certain
+see [LICENSE](LICENSE)). The solution includes declarative markdown files that are interpretable by certain
 third-party technologies (e.g., Terraform and DBT). These files are for informational use only and do not constitute an
 endorsement of those technologies, including any warranties, representations, or other guarantees as to their security,
 reliability, or suitability for purpose.
