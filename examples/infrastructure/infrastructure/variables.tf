@@ -307,6 +307,17 @@ variable "lustre_gke_support_enabled" {
   default     = true
 }
 
+variable "lustre_per_unit_storage_throughput" {
+  description = "The throughput of the instance in MB/s/TiB. Valid values are 125, 250, 500, 1000."
+  type        = number
+  default     = 1000
+
+  validation {
+    condition     = contains([125, 250, 500, 1000], var.lustre_per_unit_storage_throughput)
+    error_message = "Per unit storage throughput must be one of 125, 250, 500, 1000 MB/s/TiB."
+  }
+}
+
 #-----------------------------------------------------
 # Artifact Registry Configuration
 #-----------------------------------------------------

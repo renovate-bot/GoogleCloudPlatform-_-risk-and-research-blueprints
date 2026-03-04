@@ -36,6 +36,7 @@ module "lustre" {
 | network | The VPC network to which the Lustre instance should be connected | `string` | `"default"` | no |
 | capacity_gib | Capacity in GiB for Lustre instance. Must be a multiple of 9000. | `number` | `18000` | no |
 | gke_support_enabled | Enable GKE support for Lustre instance | `bool` | `true` | no |
+| per_unit_storage_throughput | The throughput of the instance in MB/s/TiB. Valid values are 125, 250, 500, 1000. | `number` | n/a | yes |
 
 ## Outputs
 

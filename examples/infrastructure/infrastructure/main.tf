@@ -139,6 +139,7 @@ module "lustre" {
   capacity_gib        = var.storage_capacity_gib
   filesystem          = var.lustre_filesystem
   gke_support_enabled = var.lustre_gke_support_enabled
+  per_unit_storage_throughput = var.lustre_per_unit_storage_throughput
 
 
   depends_on = [
